@@ -2,9 +2,9 @@
 
 Exemplos::
 
-    python -m organizefiles ~/Downloads --modo categoria --dry-run
-    python -m organizefiles ~/Downloads --modo data --recursivo --backup zip --sim
-    python -m organizefiles --desfazer
+    python -m orguine ~/Downloads --modo categoria --dry-run
+    python -m orguine ~/Downloads --modo data --recursivo --backup zip --sim
+    python -m orguine --desfazer
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ STATUS_TAG = {"move": "MOVER", "renamed": "RENOMEAR", "duplicate": "DUPLIC.", "s
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="organizefiles", description="Organize Files — organiza pastas com segurança.")
+    p = argparse.ArgumentParser(prog="orguine", description="Orguine — organiza pastas com segurança.")
     p.add_argument("pasta", nargs="?", help="pasta a organizar")
     p.add_argument("--modo", "-m", default="categoria",
                    help="categoria | extensao (alias: tipo) | data | abc  (padrão: categoria)")

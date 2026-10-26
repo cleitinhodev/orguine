@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 from conftest import make
-from organizefiles.core import Action, Mode, PlanOptions, build_plan
+from orguine.core import Action, Mode, PlanOptions, build_plan
 
 
 def rel(plan, item):

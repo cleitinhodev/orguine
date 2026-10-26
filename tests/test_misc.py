@@ -4,11 +4,11 @@ import json
 import pytest
 
 from conftest import make
-from organizefiles import cli
-from organizefiles.core import Mode, PlanOptions, build_plan
-from organizefiles.core.rules import Rules, RulesError
-from organizefiles.i18n import STRINGS, set_language, tr
-from organizefiles.paths import resource_path
+from orguine import cli
+from orguine.core import Mode, PlanOptions, build_plan
+from orguine.core.rules import Rules, RulesError
+from orguine.i18n import STRINGS, set_language, tr
+from orguine.paths import resource_path
 
 
 def test_i18n_keys_match():
@@ -43,7 +43,8 @@ def test_invalid_rules(tmp_path):
 
 
 def test_resource_path_finds_icon():
-    assert resource_path("Design", "icone.ico").is_file()
+    for name in ("orguine_icon.ico", "orguine_icon.png", "orguine_icon.icns", "orguine_favicon.ico"):
+        assert resource_path(name).is_file(), name
 
 
 def test_cli_dry_run_moves_nothing(folder, capsys):

@@ -4,9 +4,9 @@ import zipfile
 import pytest
 
 from conftest import make
-from organizefiles.core import (Action, BackupMode, DupStrategy, PlanOptions, build_plan,
+from orguine.core import (Action, BackupMode, DupStrategy, PlanOptions, build_plan,
                                 execute_plan, latest_undoable_journal, undo_journal)
-from organizefiles.core.hashing import sha256_file
+from orguine.core.hashing import sha256_file
 
 
 def snapshot(folder):

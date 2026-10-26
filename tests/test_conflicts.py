@@ -1,8 +1,8 @@
 import pytest
 
 from conftest import make
-from organizefiles.core import Mode, PlanOptions, build_plan, execute_plan
-from organizefiles.core.naming import split_name, unique_path
+from orguine.core import Mode, PlanOptions, build_plan, execute_plan
+from orguine.core.naming import split_name, unique_path
 
 
 def test_unique_path(tmp_path):

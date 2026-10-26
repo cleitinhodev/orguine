@@ -1,4 +1,4 @@
-"""Janela principal do Organize Files."""
+"""Janela principal do Orguine."""
 
 from __future__ import annotations
 
@@ -7,11 +7,11 @@ from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, Qt, QUrl, Slot
-from PySide6.QtGui import QDesktopServices, QIcon
+from PySide6.QtCore import QEvent, QSettings, Qt, QUrl, Slot
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (QButtonGroup, QCheckBox, QComboBox, QFileDialog, QFrame, QGridLayout,
                                QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMainWindow, QMessageBox,
-                               QProgressBar, QPushButton, QRadioButton, QScrollArea, QSizePolicy,
+                               QPushButton, QRadioButton, QScrollArea, QSizePolicy,
                                QSplitter, QStackedWidget, QTabWidget, QVBoxLayout, QWidget)
 
 from .. import APP_DISPLAY_NAME, ORG_NAME, APP_NAME, __version__
@@ -21,8 +21,11 @@ from ..core.backup import BackupError
 from ..core.models import Action, human_size
 from ..core.safety import BLOCKED, CONFIRM
 from ..i18n import LANGUAGES, get_language, set_language, tr
-from ..paths import app_data_dir, resource_path
+from ..paths import app_data_dir
+from .about import AboutDialog
 from .chart import FileTypesChart
+from .icons import app_icon, header_icon
+from .neon import HoverGlow, NeonAnimator, NeonButton, NeonLine, NeonProgressBar, NeonTabBar
 from .preview import DetailsTable, ResultTree, item_note
 from .theme import stylesheet
 from .workers import Worker, start_worker
@@ -32,13 +35,6 @@ MODES = [Mode.CATEGORY, Mode.EXTENSION, Mode.DATE, Mode.ALPHABET]
 DUPS = [DupStrategy.NONE, DupStrategy.SKIP, DupStrategy.KEEP_NEWEST, DupStrategy.TRASH]
 BACKUPS = [BackupMode.NONE, BackupMode.ZIP, BackupMode.FOLDER]
 MAX_LIST = 12
-
-
-def app_icon() -> QIcon:
-    p = resource_path("Design", "icone.ico")
-    if not p.exists():
-        p = resource_path("icone.ico")
-    return QIcon(str(p)) if p.exists() else QIcon()
 
 
 def card() -> QFrame:
@@ -74,6 +70,12 @@ class StatCard(QFrame):
         self.caption.setText(tr(self.key))
 
 
+class NeonTabs(QTabWidget):
+    def __init__(self, animator: NeonAnimator) -> None:
+        super().__init__()
+        self.setTabBar(NeonTabBar(animator))
+
+
 class MainWindow(QMainWindow):
     def __init__(self, settings: QSettings | None = None) -> None:
         super().__init__()
@@ -85,6 +87,7 @@ class MainWindow(QMainWindow):
         self.thread = None
         self._pending_organize = False
         self._on_done = None
+        self.animator = NeonAnimator(self, enabled=self.settings.value("animations", True, type=bool))
 
         self.setWindowTitle(f"{APP_DISPLAY_NAME} {__version__}")
         self.setWindowIcon(app_icon())
@@ -111,16 +114,24 @@ class MainWindow(QMainWindow):
         header.setObjectName("Header")
         hl = QHBoxLayout(header)
         hl.setContentsMargins(0, 0, 0, 0)
-        logo = QLabel()
-        logo.setPixmap(app_icon().pixmap(44, 44))
-        hl.addWidget(logo)
+        self.logo = QLabel()
+        self.logo.setPixmap(header_icon().pixmap(46, 46))
+        hl.addWidget(self.logo)
+        hl.addSpacing(4)
         titles = QVBoxLayout()
         titles.setSpacing(0)
+        title_row = QHBoxLayout()
+        title_row.setSpacing(8)
         self.title = QLabel(APP_DISPLAY_NAME)
         self.title.setObjectName("Title")
+        self.badge = QLabel(f"v{__version__}")
+        self.badge.setObjectName("Badge")
+        title_row.addWidget(self.title)
+        title_row.addWidget(self.badge, 0, Qt.AlignVCenter)
+        title_row.addStretch(1)
         self.subtitle = QLabel()
         self.subtitle.setObjectName("Subtitle")
-        titles.addWidget(self.title)
+        titles.addLayout(title_row)
         titles.addWidget(self.subtitle)
         hl.addLayout(titles)
         hl.addStretch(1)
@@ -133,7 +144,14 @@ class MainWindow(QMainWindow):
         self.theme_btn.setCursor(Qt.PointingHandCursor)
         self.theme_btn.clicked.connect(lambda: self.apply_theme("light" if self.theme == "dark" else "dark"))
         hl.addWidget(self.theme_btn)
+        self.about_btn = QPushButton()
+        self.about_btn.setCursor(Qt.PointingHandCursor)
+        self.about_btn.clicked.connect(self.open_about)
+        hl.addWidget(self.about_btn)
         outer.addWidget(header)
+        self.neon_line = NeonLine(self.animator)
+        outer.addWidget(self.neon_line)
+        outer.addSpacing(-6)
 
         splitter = QSplitter(Qt.Horizontal)
         splitter.setChildrenCollapsible(False)
@@ -208,6 +226,10 @@ class MainWindow(QMainWindow):
             cb.setCursor(Qt.PointingHandCursor)
             cb.toggled.connect(self._invalidate_plan)
             l3.addWidget(cb)
+        self.anim_cb = QCheckBox()
+        self.anim_cb.setCursor(Qt.PointingHandCursor)
+        self.anim_cb.setChecked(self.animator.enabled)
+        self.anim_cb.toggled.connect(self.set_animations)
         grid = QGridLayout()
         grid.setHorizontalSpacing(10)
         grid.setVerticalSpacing(6)
@@ -222,13 +244,17 @@ class MainWindow(QMainWindow):
         grid.addWidget(self.backup_combo, 3, 0)
         l3.addSpacing(4)
         l3.addLayout(grid)
+        l3.addSpacing(4)
+        l3.addWidget(self.anim_cb)
         sl.addWidget(c3)
+        for c in (c1, c2, c3):
+            HoverGlow(c, self.animator, radius=22)
 
-        self.analyze_btn = QPushButton()
+        self.analyze_btn = NeonButton(self.animator, phase=0.0)
         self.analyze_btn.setObjectName("Primary")
         self.analyze_btn.setCursor(Qt.PointingHandCursor)
         self.analyze_btn.clicked.connect(self.analyze)
-        self.organize_btn = QPushButton()
+        self.organize_btn = NeonButton(self.animator, phase=-1.6)
         self.organize_btn.setObjectName("Primary")
         self.organize_btn.setCursor(Qt.PointingHandCursor)
         self.organize_btn.clicked.connect(self.organize)
@@ -244,9 +270,12 @@ class MainWindow(QMainWindow):
         spl.addWidget(side_scroll, 1)
         for b in (self.analyze_btn, self.organize_btn, self.undo_btn, self.data_btn):
             spl.addWidget(b)
-        self.about_label = QLabel()
-        self.about_label.setObjectName("Muted")
-        self.about_label.setWordWrap(True)
+        for b in (self.analyze_btn, self.organize_btn):
+            HoverGlow(b, self.animator, radius=24)
+        self.about_label = QPushButton()
+        self.about_label.setObjectName("AboutLink")
+        self.about_label.setCursor(Qt.PointingHandCursor)
+        self.about_label.clicked.connect(self.open_about)
         spl.addWidget(self.about_label)
         splitter.addWidget(side_panel)
 
@@ -268,9 +297,10 @@ class MainWindow(QMainWindow):
         }
         for c in self.stats.values():
             stats_row.addWidget(c)
+            HoverGlow(c, self.animator, radius=20)
         ml.addLayout(stats_row)
 
-        self.tabs = QTabWidget()
+        self.tabs = NeonTabs(self.animator)
         self.tree = ResultTree()
         self.table = DetailsTable()
         self.chart = FileTypesChart()
@@ -279,7 +309,7 @@ class MainWindow(QMainWindow):
         el = QVBoxLayout(empty)
         el.addStretch(1)
         self.empty_icon = QLabel()
-        self.empty_icon.setPixmap(app_icon().pixmap(72, 72))
+        self.empty_icon.setPixmap(app_icon().pixmap(104, 104))
         self.empty_icon.setAlignment(Qt.AlignCenter)
         self.empty_title = QLabel()
         self.empty_title.setObjectName("EmptyTitle")
@@ -305,9 +335,8 @@ class MainWindow(QMainWindow):
         self.status_label = QLabel()
         self.status_label.setObjectName("Muted")
         self.status_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.progress = QProgressBar()
+        self.progress = NeonProgressBar(self.animator)
         self.progress.setFixedWidth(260)
-        self.progress.setTextVisible(False)
         self.progress.hide()
         self.cancel_btn = QPushButton()
         self.cancel_btn.clicked.connect(self.cancel)
@@ -336,6 +365,9 @@ class MainWindow(QMainWindow):
         self.sensitive_cb.setText(tr("opt.sensitive"))
         self.sensitive_cb.setToolTip(tr("opt.sensitive.tip"))
         self.hidden_cb.setText(tr("opt.hidden"))
+        self.anim_cb.setText(tr("opt.animations"))
+        self.anim_cb.setToolTip(tr("opt.animations.tip"))
+        self.about_btn.setText(tr("btn.about"))
         self.dup_label.setText(tr("opt.duplicates"))
         self.backup_label.setText(tr("opt.backup"))
         for combo, keys in ((self.dup_combo, [f"dup.{d.value}" for d in DUPS]),
@@ -366,6 +398,7 @@ class MainWindow(QMainWindow):
 
     def apply_theme(self, theme: str) -> None:
         self.theme = theme
+        self.animator.set_theme(theme)
         self.setStyleSheet(stylesheet(theme))
         self.stats["total"].value.setStyleSheet(f"color: {'#E6E8EF' if theme == 'dark' else '#1B1E2B'};")
         self.tree.set_theme(theme)
@@ -410,6 +443,33 @@ class MainWindow(QMainWindow):
         s.setValue("recursive", self.recursive_cb.isChecked())
         s.setValue("dups", self.dup_combo.currentIndex())
         s.setValue("backup", self.backup_combo.currentIndex())
+
+    # ============================================================ animações
+    def set_animations(self, on: bool) -> None:
+        self.animator.set_enabled(on)
+        self.settings.setValue("animations", bool(on))
+
+    def _sync_animation_activity(self) -> None:
+        self.animator.set_active(self.isVisible() and not self.isMinimized())
+
+    def showEvent(self, event) -> None:  # noqa: N802
+        super().showEvent(event)
+        self._sync_animation_activity()
+
+    def hideEvent(self, event) -> None:  # noqa: N802
+        super().hideEvent(event)
+        self._sync_animation_activity()
+
+    def changeEvent(self, event) -> None:  # noqa: N802
+        super().changeEvent(event)
+        if event.type() == QEvent.WindowStateChange:
+            self._sync_animation_activity()
+
+    def open_about(self) -> None:
+        dlg = AboutDialog(self, self.animator, self.theme)
+        dlg.setStyleSheet(stylesheet(self.theme))
+        self._about = dlg
+        dlg.exec()
 
     def closeEvent(self, event) -> None:  # noqa: N802
         if self.worker is not None:

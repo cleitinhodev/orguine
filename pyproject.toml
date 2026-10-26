@@ -3,12 +3,13 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "organizefiles"
-version = "2.0.0"
-description = "Organize pastas com segurança: prévia, backup, desfazer e proteção de arquivos sensíveis."
+name = "orguine"
+version = "2.1.0"
+description = "Orguine — organize suas pastas com prévia, backup e desfazer (PySide6)."
 readme = "README.md"
 license = { text = "GPL-3.0-or-later" }
 authors = [{ name = "CleitinhoDEV" }]
+keywords = ["organizer", "files", "folders", "pyside6", "downloads", "organizador"]
 requires-python = ">=3.10"
 dependencies = [
     "PySide6>=6.6,<7",
@@ -27,19 +28,22 @@ exif = ["Pillow>=10"]
 dev = ["pytest>=8", "pytest-qt>=4.4", "Pillow>=10", "pyinstaller>=6.3"]
 
 [project.urls]
-Homepage = "https://github.com/cleitinhodev/OrganizeFiles"
+Homepage = "https://github.com/cleitinhodev/orguine"
+Repository = "https://github.com/cleitinhodev/orguine"
+Website = "https://www.bugzinho.com/"
+Donate = "https://www.bugzinho.com/donate"
 
 [project.scripts]
-organizefiles-cli = "organizefiles.cli:main"
+orguine-cli = "orguine.cli:main"
 
 [project.gui-scripts]
-organizefiles = "organizefiles.__main__:main"
+orguine = "orguine.__main__:main"
 
 [tool.setuptools.packages.find]
-include = ["organizefiles*"]
+include = ["orguine*"]
 
 [tool.setuptools.package-data]
-organizefiles = ["resources/*"]
+orguine = ["resources/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

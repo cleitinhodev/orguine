@@ -34,16 +34,16 @@ def resource_path(*parts: str) -> Path:
 
 
 def package_resource(name: str) -> Path:
-    """Arquivo dentro de ``organizefiles/resources``."""
+    """Arquivo dentro de ``orguine/resources``."""
     return _PACKAGE_DIR / "resources" / name
 
 
 def app_data_dir() -> Path:
     """Diretório de dados do usuário (diários de desfazer, backups, logs, regras).
 
-    Pode ser sobrescrito com a variável de ambiente ``ORGANIZEFILES_DATA_DIR``.
+    Pode ser sobrescrito com a variável de ambiente ``ORGUINE_DATA_DIR``.
     """
-    override = os.environ.get("ORGANIZEFILES_DATA_DIR")
+    override = os.environ.get("ORGUINE_DATA_DIR")
     if override:
         base = Path(override)
     elif sys.platform.startswith("win"):
@@ -100,10 +100,10 @@ _logging_ready = False
 def setup_logging(level: int = logging.INFO) -> Path:
     """Configura log rotativo em arquivo (e no console). Retorna o caminho do log."""
     global _logging_ready
-    log_file = logs_dir() / "organizefiles.log"
+    log_file = logs_dir() / "orguine.log"
     if _logging_ready:
         return log_file
-    root = logging.getLogger("organizefiles")
+    root = logging.getLogger("orguine")
     root.setLevel(level)
     fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
     try:

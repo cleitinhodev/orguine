@@ -1,4 +1,4 @@
-"""Ponto de entrada: ``python -m organizefiles`` abre a interface; com argumentos, usa a CLI."""
+"""Ponto de entrada: ``python -m orguine`` abre a interface; com argumentos, usa a CLI."""
 
 from __future__ import annotations
 

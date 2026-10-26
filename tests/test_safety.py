@@ -5,18 +5,18 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 import pytest
 
 from conftest import make
-from organizefiles.core import Action, PlanOptions, UnsafeFolderError, build_plan, classify_folder
-from organizefiles.core.safety import BLOCKED, CONFIRM, OK, classify_pure, sensitive_reason
+from orguine.core import Action, PlanOptions, UnsafeFolderError, build_plan, classify_folder
+from orguine.core.safety import BLOCKED, CONFIRM, OK, classify_pure, sensitive_reason
 
 HOME_P = PurePosixPath("/home/ana")
-DATA_P = PurePosixPath("/home/ana/.local/share/organizefiles")
+DATA_P = PurePosixPath("/home/ana/.local/share/orguine")
 
 
 @pytest.mark.parametrize("p,level", [
     ("/", BLOCKED), ("/usr", BLOCKED), ("/usr/share/x", BLOCKED), ("/etc", BLOCKED),
     ("/home", BLOCKED), ("/tmp", BLOCKED), ("/System/Library", BLOCKED),
     ("/home/ana", CONFIRM), ("/home/ana/Downloads", OK), ("/home/ana/.ssh", BLOCKED),
-    ("/home/ana/.config/app", BLOCKED), ("/home/ana/.local/share/organizefiles", BLOCKED),
+    ("/home/ana/.config/app", BLOCKED), ("/home/ana/.local/share/orguine", BLOCKED),
     ("/tmp/pasta", OK), ("/mnt/hd/fotos", OK), ("/media", BLOCKED),
 ])
 def test_posix_rules(p, level):
@@ -74,7 +74,7 @@ def test_symlinks_are_skipped(folder, tmp_path):
 
 
 def test_own_executable_is_skipped(folder, monkeypatch):
-    exe = make(folder, "OrganizeFiles.exe")
+    exe = make(folder, "Orguine.exe")
     monkeypatch.setattr(sys, "argv", [str(exe)])
     plan = build_plan(folder)
     assert plan.items[0].skip_reason == "own_app"

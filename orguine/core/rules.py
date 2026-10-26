@@ -1,6 +1,6 @@
 """Regras de categorias (Imagens, Documentos, ...) carregadas de um arquivo JSON.
 
-O arquivo padrão fica em ``organizefiles/resources/default_rules.json``. Para
+O arquivo padrão fica em ``orguine/resources/default_rules.json``. Para
 personalizar, copie-o para ``<pasta de dados>/rules.json`` (veja README).
 """
 

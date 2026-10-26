@@ -16,7 +16,7 @@ from conftest import make  # noqa: E402
 
 @pytest.fixture
 def window(qtbot, tmp_path, monkeypatch):
-    from organizefiles.gui.main_window import MainWindow
+    from orguine.gui.main_window import MainWindow
 
     settings = QSettings(str(tmp_path / "s.ini"), QSettings.IniFormat)
     w = MainWindow(settings)
@@ -69,3 +69,43 @@ def test_language_and_theme_switch(window):
     assert window.analyze_btn.text() == "Analyze and preview"
     window.apply_theme("light")
     window.apply_theme("dark")
+
+
+def test_about_dialog_has_link_buttons(window, monkeypatch):
+    from PySide6.QtWidgets import QDialog
+
+    from orguine import DONATE_URL, GITHUB_PROFILE_URL, REPO_URL, SITE_URL
+    from orguine.gui.about import AboutDialog
+
+    opened = []
+    monkeypatch.setattr("orguine.gui.about.QDesktopServices.openUrl", lambda url: opened.append(url.toString()))
+    monkeypatch.setattr(QDialog, "exec", lambda self: 0)
+    window.open_about()
+    dlg = window._about
+    assert isinstance(dlg, AboutDialog)
+    urls = [b.property("url") for b in dlg.link_buttons.values()]
+    assert urls == [GITHUB_PROFILE_URL, REPO_URL, SITE_URL, DONATE_URL]
+    assert dlg.link_buttons["about.github"].text() == "Meu GitHub"
+    dlg.link_buttons["about.donate"].click()
+    assert opened == [DONATE_URL]
+
+
+def test_animations_toggle_and_pause(window, qtbot):
+    window.show()
+    qtbot.waitExposed(window)
+    assert window.animator.enabled and window.animator.running
+    window.anim_cb.setChecked(False)
+    assert not window.animator.running
+    assert window.settings.value("animations", type=bool) is False
+    window.anim_cb.setChecked(True)
+    assert window.animator.running
+    window.hide()  # janela oculta => animação pausada (sem gastar CPU)
+    assert not window.animator.running
+    window.show()
+    assert window.animator.running
+
+
+def test_window_title_and_icon(window):
+    assert window.windowTitle().startswith("Orguine")
+    assert not window.windowIcon().isNull()
+    assert not window.logo.pixmap().isNull()

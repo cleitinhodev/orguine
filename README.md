@@ -1,38 +1,56 @@
-# 📁 Organize Files 2.0
+<p align="center">
+  <img src="docs/orguine_icon.png" width="140" alt="Orguine">
+</p>
 
-Organize pastas bagunçadas (como **Downloads** ou **Área de Trabalho**) em poucos cliques, **vendo antes
-como tudo vai ficar**. Com backup, desfazer, proteção de arquivos sensíveis e tratamento de duplicados.
+<h1 align="center">Orguine</h1>
 
-> **English version below.** · Interface em **português (Brasil)** e **inglês**.
+<p align="center">
+  <b>Organize suas pastas com prévia, backup e desfazer — sem sustos.</b><br>
+  <a href="https://github.com/cleitinhodev/orguine/actions/workflows/ci.yml"><img src="https://github.com/cleitinhodev/orguine/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/PySide6-Qt%206-7C6CF0" alt="PySide6">
+  <img src="https://img.shields.io/badge/licen%C3%A7a-GPL--3.0-6ff8c8" alt="GPL-3.0">
+</p>
 
-![Prévia de como a pasta vai ficar](docs/screenshots/04-preview-compacto-dark.png)
+<p align="center">
+  <a href="https://github.com/cleitinhodev">Meu GitHub</a> ·
+  <a href="https://github.com/cleitinhodev/orguine">Projeto</a> ·
+  <a href="https://www.bugzinho.com/">Site</a> ·
+  <a href="https://www.bugzinho.com/donate">💚 Apoiar / Doar</a>
+</p>
 
-| Gráfico de tipos de arquivo | Detalhes de cada arquivo (tema claro) |
+O **Orguine** arruma pastas bagunçadas (como **Downloads** ou **Área de Trabalho**) em poucos cliques,
+**mostrando antes como tudo vai ficar**. Tem backup, desfazer, proteção de arquivos sensíveis e
+tratamento de duplicados. Interface em **português (Brasil)** e **inglês**. *English version below.*
+
+![Orguine com efeitos neon animados](docs/screenshots/neon.gif)
+
+| Prévia "como ficará" (tema claro) | Sobre |
 |---|---|
-| ![Gráfico](docs/screenshots/03-grafico-dark.png) | ![Detalhes](docs/screenshots/02-detalhes-light.png) |
+| ![Prévia](docs/screenshots/01-preview-arvore-light.png) | ![Sobre](docs/screenshots/06-sobre-dark.png) |
 
-## ✨ Novidades da versão 2.0
+> O Orguine é a evolução do antigo **Organize Files** (os scripts originais estão em [`legacy/`](legacy/)).
 
-A versão 2.0 foi reescrita do zero em **PySide6 (Qt 6)**. Os scripts antigos em CustomTkinter estão em [`legacy/`](legacy/).
+## ✨ Funcionalidades
 
 - **Prévia "como ficará"**: uma árvore com as pastas que serão criadas e o que vai para cada uma. **Nada é movido antes de você confirmar.**
 - **Gráfico de tipos de arquivo**: gráfico de rosca por categoria, por quantidade ou por tamanho, com legenda e porcentagens.
 - **Tabela de detalhes** com busca e filtros (renomeados, duplicados, sensíveis, ignorados) e o motivo de cada decisão.
 - **4 modos de organização**:
   - **Categorias inteligentes**: Imagens, Documentos, Vídeos, Músicas, Compactados, Código, Instaladores…
-  - **Por extensão**: o antigo modo "Tipo"; uma pasta por formato (PDF, MP3…).
+  - **Por extensão**: uma pasta por formato (PDF, MP3…).
   - **Por data**: Ano/Mês. Para fotos, usa a data EXIF quando ela existe.
   - **Alfabética**: A–Z, 0-9 e Outros.
 - **Duplicados**: detectados por conteúdo (SHA-256, não só pelo nome). Você escolhe entre manter o original e enviar as cópias para a **lixeira**, apenas pular, manter o mais novo, ou ignorar.
 - **Subpastas (opcional)**: pastas de projetos (`.git`, `package.json`, `pyproject.toml`…) nunca são desmontadas.
 - **Trabalho em segundo plano**: análise e organização rodam em uma *thread*, com barra de progresso e botão **Cancelar**, e a janela não trava.
 - **Desfazer a última organização** com um clique.
+- **Visual neon**: a cor **#6ff8c8** do robozinho combinada ao roxo do tema. Faixas de luz correm na linha do cabeçalho, na aba ativa e na barra de progresso; os botões principais ganham um reflexo, e os cartões brilham ao passar o mouse. As animações usam um único temporizador leve (~30 fps), **pausam com a janela minimizada** e podem ser desligadas em **Opções → Animações neon** (ou com `ORGUINE_NO_ANIM=1`).
 - **Tema claro/escuro**, arrastar e soltar uma pasta na janela, e preferências salvas.
 - **Linha de comando (CLI)** para usar em scripts.
 
 ## 🛡️ Segurança em camadas
 
-O antigo programa podia **sobrescrever arquivos com o mesmo nome** e não tinha como voltar atrás. Agora:
+O antigo Organize Files 1.x podia **sobrescrever arquivos com o mesmo nome** e não tinha como voltar atrás. Agora:
 
 1. **Nunca sobrescreve**: se o destino já existir, o arquivo vira `nome (1).ext`, `nome (2).ext`… (sem diferenciar maiúsculas de minúsculas, como no Windows/macOS).
 2. **Pastas perigosas são bloqueadas**: raiz do disco, `C:\Windows`, `Program Files`, `AppData`, `/usr`, `/etc`, `/System`, `~/Library`, `~/.ssh`, `~/.config`… Organizar a **pasta pessoal inteira** exige digitar `ORGANIZAR` para confirmar.
@@ -48,52 +66,53 @@ O antigo programa podia **sobrescrever arquivos com o mesmo nome** e não tinha 
 ## 🚀 Como usar
 
 ### Executável pronto
-Baixe o arquivo do seu sistema na aba **Actions** (artefatos do último build) ou em **Releases**:
-`OrganizeFiles-windows-*.exe`, `OrganizeFiles-macos-*.zip` (app) ou `OrganizeFiles-linux-*`.
+Baixe o arquivo do seu sistema em **[Releases](https://github.com/cleitinhodev/orguine/releases)** ou na aba
+**[Actions](https://github.com/cleitinhodev/orguine/actions)** (artefatos do último build):
+`Orguine-windows-amd64.exe`, `Orguine-macos-*.zip` (app) ou `Orguine-linux-x86_64`.
 
 > No macOS o app não é assinado. Na primeira vez, abra com **botão direito → Abrir**.
+> No Windows, o SmartScreen pode avisar por ser um executável novo e sem assinatura: **Mais informações → Executar assim mesmo**.
 
 ### A partir do código-fonte (Python 3.10+)
 ```bash
-git clone https://github.com/cleitinhodev/OrganizeFiles.git
-cd OrganizeFiles
-git checkout revitalize-pyside6
+git clone https://github.com/cleitinhodev/orguine.git
+cd orguine
 python -m venv .venv
 # Windows: .venv\Scripts\activate   |   Linux/macOS: source .venv/bin/activate
 pip install -e ".[exif]"        # ou: pip install -r requirements.txt
-python -m organizefiles          # abre a interface
+python -m orguine               # abre a interface
 ```
 
 ### Linha de comando
 ```bash
 # só ver a prévia (não mexe em nada)
-python -m organizefiles ~/Downloads --dry-run
+python -m orguine ~/Downloads --dry-run
 
 # organizar por categoria, com backup ZIP e duplicados para a lixeira
-python -m organizefiles ~/Downloads --backup zip --duplicados trash
+python -m orguine ~/Downloads --backup zip --duplicados trash
 
 # por data (ano/mês), incluindo subpastas, sem perguntar
-python -m organizefiles ~/Fotos --modo data --recursivo --sim
+python -m orguine ~/Fotos --modo data --recursivo --sim
 
 # desfazer a última organização
-python -m organizefiles --desfazer
+python -m orguine --desfazer
 ```
 Modos: `categoria` (padrão), `extensao` (ou `tipo`), `data`, `abc`. Veja todas as opções com `--help`.
-Depois de `pip install`, os comandos `organizefiles` (interface) e `organizefiles-cli` também ficam disponíveis.
+Depois de `pip install`, os comandos `orguine` (interface) e `orguine-cli` também ficam disponíveis.
 
 ## ⚙️ Personalizar categorias
-Copie [`organizefiles/resources/default_rules.json`](organizefiles/resources/default_rules.json) para
+Copie [`orguine/resources/default_rules.json`](orguine/resources/default_rules.json) para
 `rules.json` dentro da **pasta de dados** e edite os nomes, as cores e as extensões. Na CLI, também dá para usar `--regras arquivo.json`.
 
 **Pasta de dados** (diários de desfazer, backups, logs e `rules.json`). O botão "Abrir pasta de dados" na interface abre essa pasta:
 
 | Sistema | Local |
 |---|---|
-| Windows | `%APPDATA%\OrganizeFiles` |
-| macOS | `~/Library/Application Support/OrganizeFiles` |
-| Linux | `~/.local/share/organizefiles` (ou `$XDG_DATA_HOME`) |
+| Windows | `%APPDATA%\Orguine` |
+| macOS | `~/Library/Application Support/Orguine` |
+| Linux | `~/.local/share/orguine` (ou `$XDG_DATA_HOME`) |
 
-Para trocar o local, defina a variável `ORGANIZEFILES_DATA_DIR`.
+Para trocar o local, defina a variável `ORGUINE_DATA_DIR`.
 
 ## 🧑‍💻 Desenvolvimento
 ```bash
@@ -104,7 +123,7 @@ python scripts/build_exe.py     # gera o executável em dist/ (PyInstaller)
 
 Estrutura do projeto:
 ```
-organizefiles/
+orguine/
 ├── core/         # lógica sem interface (testável)
 │   ├── planner.py     # monta o plano / prévia
 │   ├── executor.py    # executa o plano e desfaz
@@ -113,16 +132,19 @@ organizefiles/
 │   ├── journal.py     # diário de desfazer
 │   ├── backup.py      # ZIP / cópia
 │   └── rules.py, naming.py, dates.py, hashing.py, models.py
-├── gui/          # PySide6: janela, prévia, gráfico, tema, workers (QThread)
+├── gui/          # PySide6: janela, prévia, gráfico, tema, efeitos neon, "Sobre", workers (QThread)
 ├── cli.py        # linha de comando
 ├── i18n.py       # textos pt-BR / en
-└── resources/    # regras padrão e ícone
+└── resources/    # regras padrão e ícones (orguine_icon: app/executável; orguine_favicon: cabeçalho)
 tests/            # pytest + pytest-qt
-legacy/           # versão 1.x (CustomTkinter), só para referência
+legacy/           # Organize Files 1.x (CustomTkinter), só para referência
 ```
 
-O **GitHub Actions** roda os testes no Windows, no macOS e no Linux e gera os executáveis com PyInstaller.
-Uma tag `v*` publica tudo como Release.
+O **GitHub Actions** roda os testes no Windows, no macOS e no Linux e gera os executáveis com PyInstaller
+(e confere se o ícone ficou embutido no `.exe`). Uma tag `v*` publica tudo como Release.
+
+## 💚 Apoie
+Se o Orguine te ajudou, considere [apoiar o projeto](https://www.bugzinho.com/donate). Visite também [bugzinho.com](https://www.bugzinho.com/).
 
 ## 📄 Licença
 [GPL-3.0](LICENSE) © CleitinhoDEV
@@ -131,8 +153,8 @@ Uma tag `v*` publica tudo como Release.
 
 # 🇺🇸 English
 
-**Organize Files** tidies up messy folders (Downloads, Desktop…) and **shows you the result before anything is moved**.
-Version 2.0 is a full rewrite in **PySide6 (Qt 6)**, with an English and Brazilian Portuguese UI.
+**Orguine** tidies up messy folders (Downloads, Desktop…) and **shows you the result before anything is moved**.
+It is built with **PySide6 (Qt 6)** and has an English and Brazilian Portuguese UI. It grew out of the old *Organize Files* project.
 
 ![File types chart](docs/screenshots/03-grafico-dark-en.png)
 
@@ -142,7 +164,8 @@ Version 2.0 is a full rewrite in **PySide6 (Qt 6)**, with an English and Brazili
 - **Duplicate detection** by content (SHA-256). Copies can go to the **system trash**, be skipped, or keep only the newest file.
 - Optional recursion, which never breaks apart project folders (`.git`, `package.json`…).
 - A background worker (QThread) with progress and **Cancel**. **One-click undo**. Light and dark themes. Drag and drop.
-- A **CLI**: `python -m organizefiles <folder> [--dry-run] [--modo categoria|extensao|data|abc] [--backup zip|folder] [--duplicados trash|skip|newest] [--desfazer]`.
+- **Neon look**: the robot's **#6ff8c8** blended with the purple theme. Light streaks run along the header line, the active tab and the progress bar; primary buttons get a shine sweep and cards glow on hover. The animations run on a single light timer, pause while the window is minimized, and can be turned off under **Options → Neon animations** (or with `ORGUINE_NO_ANIM=1`).
+- A **CLI**: `python -m orguine <folder> [--dry-run] [--modo categoria|extensao|data|abc] [--backup zip|folder] [--duplicados trash|skip|newest] [--desfazer]`.
 
 **Safety**
 - Files are never overwritten (`name (1).ext`).
@@ -151,16 +174,20 @@ Version 2.0 is a full rewrite in **PySide6 (Qt 6)**, with an English and Brazili
 - System, hidden, temporary, and partial-download files are skipped.
 - Optional ZIP or folder backup. An atomic undo journal. Deletions only go to the trash. Rotating logs.
 
+**Download**: grab the build for your system from [Releases](https://github.com/cleitinhodev/orguine/releases) or the latest [Actions](https://github.com/cleitinhodev/orguine/actions) run.
+
 **Run from source**
 ```bash
 pip install -e ".[exif]"
-python -m organizefiles          # GUI
-python -m organizefiles --help   # CLI
+python -m orguine          # GUI
+python -m orguine --help   # CLI
 ```
-Custom categories: copy `organizefiles/resources/default_rules.json` to `rules.json` in the app data folder
-(`%APPDATA%\OrganizeFiles`, `~/Library/Application Support/OrganizeFiles`, or `~/.local/share/organizefiles`).
+Custom categories: copy `orguine/resources/default_rules.json` to `rules.json` in the app data folder
+(`%APPDATA%\Orguine`, `~/Library/Application Support/Orguine`, or `~/.local/share/orguine`).
 
 **Development**: `pip install -e ".[dev]" && pytest -q`. To build: `python scripts/build_exe.py`.
 CI runs the tests and builds Windows, macOS, and Linux executables.
 
-License: GPL-3.0.
+**Links**: [My GitHub](https://github.com/cleitinhodev) · [Project](https://github.com/cleitinhodev/orguine) · [Website](https://www.bugzinho.com/) · [Support / Donate](https://www.bugzinho.com/donate)
+
+License: GPL-3.0 © CleitinhoDEV

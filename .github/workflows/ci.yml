@@ -60,11 +60,17 @@ jobs:
           pip install . "pyinstaller>=6.3" Pillow
       - name: Gerar executável
         run: python scripts/build_exe.py
+      - name: Conferir ícone embutido (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          pip install pefile
+          python scripts/check_exe_icon.py dist/Orguine-windows-*.exe orguine/resources/orguine_icon.ico
       - uses: actions/upload-artifact@v4
         with:
-          name: OrganizeFiles-${{ runner.os }}
+          name: Orguine-${{ runner.os }}
           path: |
-            dist/OrganizeFiles-*
+            dist/Orguine-*
           if-no-files-found: error
 
   release:

@@ -17,7 +17,7 @@ from pathlib import Path
 import PyInstaller.__main__
 
 ROOT = Path(__file__).resolve().parents[1]
-NAME = "OrganizeFiles"
+NAME = "Orguine"
 EXCLUDES = ["tkinter", "PySide6.QtWebEngineCore", "PySide6.QtWebEngineWidgets", "PySide6.Qt3DCore",
             "PySide6.QtQuick", "PySide6.QtQml", "PySide6.QtMultimedia", "PySide6.QtPdf"]
 
@@ -33,15 +33,20 @@ def sha256(p: Path) -> str:
 def main() -> int:
     sep = os.pathsep
     is_mac = sys.platform == "darwin"
+    res = ROOT / "orguine" / "resources"
+    # Ícone geral: .ico no Windows, .icns no macOS, .png no Linux (lá a janela usa o ícone em tempo de execução)
+    icon = res / ("orguine_icon.icns" if is_mac else "orguine_icon.ico" if sys.platform.startswith("win")
+                  else "orguine_icon.png")
     args = [
         str(ROOT / "launcher.py"), "--noconfirm", "--clean", "--windowed", "--name", NAME,
-        "--icon", str(ROOT / "Design" / "icone.ico"),
-        "--add-data", f"{ROOT / 'Design' / 'icone.ico'}{sep}Design",
-        "--add-data", f"{ROOT / 'organizefiles' / 'resources'}{sep}organizefiles/resources",
+        "--icon", str(icon),
+        "--add-data", f"{ROOT / 'orguine' / 'resources'}{sep}orguine/resources",
         "--distpath", str(ROOT / "dist"), "--workpath", str(ROOT / "build"), "--specpath", str(ROOT / "build"),
     ]
     if not is_mac:
         args.append("--onefile")
+    if is_mac:
+        args += ["--osx-bundle-identifier", "com.cleitinhodev.orguine"]
     for mod in EXCLUDES:
         args += ["--exclude-module", mod]
     PyInstaller.__main__.run(args)

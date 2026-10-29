@@ -101,19 +101,71 @@ def _target_rel(path: Path, item: PlanItem, mode: Mode, options: PlanOptions) ->
     raise ValueError(mode)  # pragma: no cover
 
 
-def _safe_dir(root: Path, rel: Path) -> Path:
-    """Garante que nenhuma pasta de destino colida com um ARQUIVO já existente."""
-    cur = root
-    out: list[str] = []
-    for comp in rel.parts:
-        name = comp
-        n = 2
-        while os.path.lexists(cur / name) and (not (cur / name).is_dir() or (cur / name).is_symlink()):
+class _DirResolver:
+    """Escolhe o nome real de cada pasta de destino.
+
+    Regras (comparação sem diferenciar maiúsculas/minúsculas, como em Windows/macOS):
+    * já existe uma PASTA com esse nome (ex.: ``imagens`` para ``Imagens``): é reaproveitada;
+    * existe um arquivo/atalho com esse nome que FICA onde está: usa ``Nome (2)``, ``Nome (3)``...;
+    * o arquivo com esse nome também sai do lugar pelo plano (``leaving``): usa o nome simples —
+      o executor tira o arquivo do caminho antes de criar a pasta.
+    """
+
+    def __init__(self, root: Path, leaving: set[str]) -> None:
+        self.root = root
+        self.leaving = leaving
+        self._listing: dict[str, dict[str, list[tuple[str, bool, str]]]] = {}
+        self._cache: dict[Path, Path] = {}
+
+    def _entries(self, d: Path) -> dict[str, list[tuple[str, bool, str]]]:
+        key = path_key(d)
+        if key not in self._listing:
+            out: dict[str, list[tuple[str, bool, str]]] = {}
+            try:
+                with os.scandir(d) as it:
+                    for e in it:
+                        try:
+                            is_dir = e.is_dir(follow_symlinks=False)
+                        except OSError:
+                            is_dir = False
+                        name = unicodedata.normalize("NFC", e.name)
+                        out.setdefault(name.casefold(), []).append((e.name, is_dir, path_key(e.path)))
+            except OSError:
+                pass  # pasta ainda não existe (será criada): nada pode bloquear
+            self._listing[key] = out
+        return self._listing[key]
+
+    def _pick(self, cur: Path, comp: str) -> str:
+        def lookup(name: str) -> tuple[str | None, bool]:
+            matches = self._entries(cur).get(unicodedata.normalize("NFC", name).casefold(), [])
+            dirs = [m[0] for m in matches if m[1]]
+            if dirs:  # pasta existente: reaproveita (com a grafia que já está no disco)
+                return (name if name in dirs else dirs[0]), False
+            blocked = any(not m[1] and m[2] not in self.leaving for m in matches)
+            return None, blocked
+
+        name, n = comp, 2
+        while True:
+            existing, blocked = lookup(name)
+            if existing is not None:
+                return existing
+            if not blocked:
+                return name
             name = f"{comp} ({n})"
             n += 1
-        out.append(name)
-        cur = cur / name
-    return Path(*out) if out else Path()
+
+    def resolve(self, rel: Path) -> Path:
+        if rel in self._cache:
+            return self._cache[rel]
+        cur = self.root
+        out: list[str] = []
+        for comp in rel.parts:
+            name = self._pick(cur, comp)
+            out.append(name)
+            cur = cur / name
+        result = Path(*out) if out else Path()
+        self._cache[rel] = result
+        return result
 
 
 def build_plan(root: Path | str, options: PlanOptions | None = None, rules: Rules | None = None,
@@ -150,7 +202,7 @@ def build_plan(root: Path | str, options: PlanOptions | None = None, rules: Rule
         if is_hidden(path, st) and not options.include_hidden:
             item.action, item.skip_reason = Action.SKIP, "hidden"
             continue
-        rel = _safe_dir(root, _target_rel(path, item, options.mode, options))
+        rel = _target_rel(path, item, options.mode, options)  # nome "ideal"; ajustado mais abaixo
         dst = root / rel / path.name
         if path_key(dst) == path_key(path):
             item.action, item.skip_reason = Action.SKIP, "already_organized"
@@ -162,6 +214,13 @@ def build_plan(root: Path | str, options: PlanOptions | None = None, rules: Rule
                       if i.action is Action.MOVE or i.skip_reason == "already_organized"]
         groups = find_duplicate_groups(candidates, progress, cancel)
         apply_strategy(groups, options.duplicates)
+
+    # Pastas de destino: só ganham " (2)" se o nome estiver ocupado por algo que FICA.
+    leaving = {path_key(i.src) for i in plan.items if i.action in (Action.MOVE, Action.TRASH)}
+    resolver = _DirResolver(root, leaving)
+    for item in plan.moves:
+        assert item.dst is not None
+        item.dst = root / resolver.resolve(item.dst.parent.relative_to(root)) / item.dst.name
 
     _resolve_conflicts(plan)
     return plan

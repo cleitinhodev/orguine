@@ -86,13 +86,13 @@ def test_alphabet_mode_accents_digits_symbols(folder):
 
 
 def test_alphabet_folder_colliding_with_existing_file(folder):
-    """Bug antigo: um arquivo chamado 'A' impedia a criação da pasta 'A'."""
+    """Um arquivo chamado 'A' que também vai ser movido não força a pasta 'A (2)'."""
     make(folder, "A")
     make(folder, "abacate.txt")
     plan = build_plan(folder, PlanOptions(mode=Mode.ALPHABET))
     items = by_name(plan)
-    assert rel(plan, items["abacate.txt"]) == "A (2)/abacate.txt"
-    assert rel(plan, items["A"]) == "A (2)/A"
+    assert rel(plan, items["abacate.txt"]) == "A/abacate.txt"
+    assert rel(plan, items["A"]) == "A/A"
 
 
 def test_recursive_and_already_organized(folder):

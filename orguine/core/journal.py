@@ -85,8 +85,14 @@ class Journal:
         return [e for e in self.data["entries"] if e["op"] == "trash"]
 
     @property
+    def stashes(self) -> list[dict]:
+        """Arquivos renomeados provisoriamente para liberar o nome de uma pasta nova."""
+        return [e for e in self.data["entries"] if e["op"] == "stash"]
+
+    @property
     def undoable(self) -> bool:
-        return self.data.get("status") in ("done", "cancelled", "running", "error", "partial_undo") and bool(self.moves)
+        return (self.data.get("status") in ("done", "cancelled", "running", "error", "partial_undo")
+                and bool(self.moves or self.stashes))
 
 
 def list_journals() -> list[Journal]:
@@ -164,9 +170,32 @@ def undo_journal(journal: Journal | Path | str | None = None, progress: Progress
         except OSError:
             pass
 
+    # Arquivos que foram renomeados provisoriamente (para dar lugar a uma pasta com o mesmo
+    # nome) voltam ao nome original agora que a pasta foi removida.
+    remaining_stashes: list[dict] = []
+    partial = res.cancelled or bool(res.errors)
+    for entry in reversed(journal.stashes):
+        original, tmp = Path(entry["src"]), Path(entry["dst"])
+        if not os.path.lexists(tmp):
+            continue  # o nome provisório nunca chegou a ser usado, ou o arquivo já voltou
+        try:
+            if os.path.lexists(original):
+                if partial:  # o nome ainda está ocupado: tenta de novo no próximo desfazer
+                    remaining_stashes.append(entry)
+                    continue
+                target = unique_path(original)
+                res.renamed += 1
+            else:
+                target = original
+            os.rename(tmp, target)
+        except OSError as exc:
+            res.errors.append((str(tmp), str(exc)))
+            remaining_stashes.append(entry)
+            partial = True
+
     if res.cancelled or res.errors:
-        journal.data["entries"] = [e for e in journal.data["entries"]
-                                   if e["op"] != "move"] + list(reversed(remaining))
+        journal.data["entries"] = ([e for e in journal.data["entries"] if e["op"] not in ("move", "stash")]
+                                   + list(reversed(remaining_stashes)) + list(reversed(remaining)))
         journal.data["status"] = "partial_undo"
         if res.cancelled:
             journal.data["status"] = "cancelled"

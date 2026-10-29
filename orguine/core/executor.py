@@ -7,6 +7,7 @@ import os
 import shutil
 import stat
 import threading
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -14,8 +15,8 @@ from typing import Callable
 from .backup import create_backup
 from .hashing import Cancelled, sha256_file
 from .journal import Journal
-from .models import Action, BackupMode, Plan
-from .naming import unique_path
+from .models import Action, BackupMode, Plan, PlanItem
+from .naming import path_key, unique_path
 from .safety import ensure_folder_allowed
 
 log = logging.getLogger(__name__)
@@ -41,16 +42,34 @@ class RunResult:
     backup_path: Path | None = None
 
 
-def _mkdirs(root: Path, folder: Path, journal: Journal) -> None:
-    """Cria as pastas de destino, registrando no diário as que não existiam."""
-    missing: list[Path] = []
-    cur = folder
-    while not cur.exists() and cur != root and root in cur.parents:
-        missing.append(cur)
-        cur = cur.parent
-    for d in reversed(missing):
-        d.mkdir(exist_ok=True)
-        journal.add_dir(d)
+def _is_real_dir(p: Path) -> bool:
+    return p.is_dir() and not p.is_symlink()
+
+
+def _temp_name(p: Path) -> Path:
+    """Nome provisório, na mesma pasta, para tirar um arquivo do caminho de uma pasta nova."""
+    return unique_path(p.with_name(f"{p.name}.orguine-tmp-{uuid.uuid4().hex[:8]}"))
+
+
+def _unstash(stashed: dict[int, tuple[PlanItem, Path, Path]]) -> None:
+    """Arquivos tirados do caminho que acabaram não sendo movidos (erro/cancelamento): volta o
+    nome original se ele estiver livre. Se não estiver, o desfazer cuida disso pelo diário."""
+    for item, original, tmp in stashed.values():
+        try:
+            if os.path.lexists(tmp) and not os.path.lexists(original):
+                os.rename(tmp, original)
+                item.src = original
+        except OSError as exc:
+            log.warning("Não foi possível devolver o nome de %s: %s", tmp, exc)
+
+
+def _check_item(item: PlanItem) -> str:
+    st = os.lstat(item.src)
+    if stat.S_ISLNK(st.st_mode) or not stat.S_ISREG(st.st_mode):
+        raise OSError("não é mais um arquivo comum")
+    if st.st_size != item.size:
+        raise OSError("o arquivo mudou depois da prévia; analise de novo")
+    return item.sha256 or sha256_file(item.src)
 
 
 def execute_plan(plan: Plan, backup: BackupMode = BackupMode.NONE,
@@ -85,6 +104,68 @@ def execute_plan(plan: Plan, backup: BackupMode = BackupMode.NONE,
     res.journal_path = journal.path
     status = "done"
     total = len(ops)
+    root = plan.root
+    pending: dict[str, PlanItem] = {path_key(i.src): i for i in ops}  # ainda não processados
+    done: set[int] = set()
+    stashed: dict[int, tuple[PlanItem, Path, Path]] = {}  # id -> (item, nome original, provisório)
+
+    def trash_item(item: PlanItem) -> None:
+        pending.pop(path_key(item.src), None)
+        done.add(id(item))
+        digest = _check_item(item)
+        trash(str(item.src))
+        journal.add("trash", item.src, None, item.size, digest)
+        res.trashed += 1
+
+    def clear_way(blocker: Path) -> bool:
+        """Um arquivo ocupa o nome de uma pasta a criar. Se ele também sai pelo plano, sai da
+        frente agora; devolve False se ele fica (então a pasta ganha um sufixo)."""
+        item = pending.get(path_key(blocker))
+        if item is None:
+            return False
+        if item.action is Action.TRASH:
+            try:
+                trash_item(item)
+            except Exception as exc:  # noqa: BLE001
+                res.errors.append((str(item.src), str(exc)))
+                return False
+            return not os.path.lexists(blocker)
+        # MOVE: renomeia para um nome provisório na mesma pasta. O diário é salvo ANTES de
+        # renomear, então mesmo se o programa cair aqui o desfazer sabe o nome original.
+        try:
+            _check_item(item)
+        except Exception as exc:  # noqa: BLE001 - ele não será movido: fica, e a pasta ganha sufixo
+            pending.pop(path_key(item.src), None)
+            done.add(id(item))
+            res.errors.append((str(item.src), str(exc)))
+            return False
+        tmp = _temp_name(item.src)
+        pending.pop(path_key(item.src), None)
+        journal.add("stash", item.src, tmp, item.size, item.sha256)
+        journal.save()
+        os.rename(item.src, tmp)
+        stashed[id(item)] = (item, item.src, tmp)
+        item.src = tmp
+        pending[path_key(tmp)] = item
+        return True
+
+    def mkdirs(folder: Path) -> Path:
+        """Cria as pastas de destino (registrando as novas) e devolve a pasta real usada."""
+        cur = root
+        for comp in folder.relative_to(root).parts:
+            cand, n = cur / comp, 2
+            while True:
+                if _is_real_dir(cand):
+                    break
+                if not os.path.lexists(cand) or clear_way(cand):
+                    cand.mkdir()
+                    journal.add_dir(cand)
+                    break
+                # ocupado por algo que fica (ex.: mudou depois da prévia): pasta com sufixo
+                cand, n = cur / f"{comp} ({n})", n + 1
+            cur = cand
+        return cur
+
     try:
         for n, item in enumerate(ops, 1):
             if cancel is not None and cancel.is_set():
@@ -93,26 +174,25 @@ def execute_plan(plan: Plan, backup: BackupMode = BackupMode.NONE,
                 break
             if progress:
                 progress(n, total, item.src.name)
+            if id(item) in done:
+                continue
             try:
-                st = os.lstat(item.src)
-                if stat.S_ISLNK(st.st_mode) or not stat.S_ISREG(st.st_mode):
-                    raise OSError("não é mais um arquivo comum")
-                if st.st_size != item.size:
-                    raise OSError("o arquivo mudou depois da prévia; analise de novo")
-                digest = item.sha256 or sha256_file(item.src)
                 if item.action is Action.MOVE:
                     assert item.dst is not None
-                    _mkdirs(plan.root, item.dst.parent, journal)
-                    target = unique_path(item.dst)  # checagem final contra sobrescrita
+                    digest = _check_item(item)
+                    folder = mkdirs(item.dst.parent)
+                    pending.pop(path_key(item.src), None)
+                    done.add(id(item))
+                    planned = folder / item.dst.name
+                    target = unique_path(planned)  # checagem final contra sobrescrita
                     if target != item.dst or item.renamed:
                         res.renamed += 1
                     shutil.move(str(item.src), str(target))
                     journal.add("move", item.src, target, item.size, digest)
+                    stashed.pop(id(item), None)
                     res.moved += 1
                 elif item.action is Action.TRASH:
-                    trash(str(item.src))
-                    journal.add("trash", item.src, None, item.size, digest)
-                    res.trashed += 1
+                    trash_item(item)
             except Cancelled:
                 raise
             except Exception as exc:  # erro em UM arquivo não para os outros
@@ -124,8 +204,10 @@ def execute_plan(plan: Plan, backup: BackupMode = BackupMode.NONE,
         res.cancelled = True
         status = "cancelled"
     except BaseException:
+        _unstash(stashed)
         journal.finish("error")
         raise
+    _unstash(stashed)
     journal.finish(status)
     log.info("Organização concluída em %s: %d movidos, %d na lixeira, %d erros",
              plan.root, res.moved, res.trashed, len(res.errors))

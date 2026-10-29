@@ -7,7 +7,7 @@ from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QSettings, Qt, QUrl, Slot
+from PySide6.QtCore import QEvent, QSettings, Qt, QTimer, QUrl, Slot
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (QButtonGroup, QCheckBox, QComboBox, QFileDialog, QFrame, QGridLayout,
                                QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMainWindow, QMessageBox,
@@ -35,6 +35,7 @@ MODES = [Mode.CATEGORY, Mode.EXTENSION, Mode.DATE, Mode.ALPHABET]
 DUPS = [DupStrategy.NONE, DupStrategy.SKIP, DupStrategy.KEEP_NEWEST, DupStrategy.TRASH]
 BACKUPS = [BackupMode.NONE, BackupMode.ZIP, BackupMode.FOLDER]
 MAX_LIST = 12
+REFRESH_DELAY_MS = 300  # espera curta antes de refazer a prévia quando uma opção muda
 
 
 def card() -> QFrame:
@@ -87,6 +88,13 @@ class MainWindow(QMainWindow):
         self.thread = None
         self._pending_organize = False
         self._on_done = None
+        self._worker_kind: str | None = None      # "analyze" | "execute" | "undo"
+        self._preview_folder: Path | None = None  # pasta da última prévia (ou da análise em andamento)
+        self._refresh_pending = False             # refazer a prévia assim que a análise atual parar
+        self._refresh_timer = QTimer(self)
+        self._refresh_timer.setSingleShot(True)
+        self._refresh_timer.setInterval(REFRESH_DELAY_MS)
+        self._refresh_timer.timeout.connect(self._auto_refresh)
         self.animator = NeonAnimator(self, enabled=self.settings.value("animations", True, type=bool))
 
         self.setWindowTitle(f"{APP_DISPLAY_NAME} {__version__}")
@@ -181,7 +189,7 @@ class MainWindow(QMainWindow):
         self.folder_edit = QLineEdit()
         self.folder_edit.setClearButtonEnabled(True)
         self.folder_edit.returnPressed.connect(self.analyze)
-        self.folder_edit.textChanged.connect(self._invalidate_plan)
+        self.folder_edit.textChanged.connect(self._on_folder_text)
         self.browse_btn = QPushButton()
         self.browse_btn.setCursor(Qt.PointingHandCursor)
         self.browse_btn.clicked.connect(self.browse)
@@ -210,7 +218,7 @@ class MainWindow(QMainWindow):
             self.mode_radios.append(rb)
             self.mode_descs.append(desc)
         self.mode_radios[0].setChecked(True)
-        self.mode_group.idClicked.connect(self._invalidate_plan)
+        self.mode_group.idToggled.connect(lambda _id, on: on and self._on_options_changed())
         sl.addWidget(c2)
 
         c3 = card()
@@ -224,7 +232,7 @@ class MainWindow(QMainWindow):
         self.hidden_cb = QCheckBox()
         for cb in (self.recursive_cb, self.sensitive_cb, self.hidden_cb):
             cb.setCursor(Qt.PointingHandCursor)
-            cb.toggled.connect(self._invalidate_plan)
+            cb.toggled.connect(self._on_options_changed)
             l3.addWidget(cb)
         self.anim_cb = QCheckBox()
         self.anim_cb.setCursor(Qt.PointingHandCursor)
@@ -235,7 +243,7 @@ class MainWindow(QMainWindow):
         grid.setVerticalSpacing(6)
         self.dup_label = QLabel()
         self.dup_combo = QComboBox()
-        self.dup_combo.currentIndexChanged.connect(self._invalidate_plan)
+        self.dup_combo.currentIndexChanged.connect(self._on_options_changed)
         self.backup_label = QLabel()
         self.backup_combo = QComboBox()
         grid.addWidget(self.dup_label, 0, 0)
@@ -413,11 +421,10 @@ class MainWindow(QMainWindow):
             return
         set_language(code)
         self.settings.setValue("lang", code)
-        had_plan = self.plan is not None
-        self._set_plan(None)
         self.retranslate()
-        if had_plan:
-            self.status(tr("msg.lang_changed"))
+        if self.plan is not None:
+            self.table.set_plan(self.plan)  # textos da tabela no novo idioma até a prévia nova chegar
+        self._on_options_changed()  # os nomes das pastas mudam com o idioma: refaz a prévia
 
     # ============================================================ settings
     def _load_settings(self) -> None:
@@ -506,14 +513,72 @@ class MainWindow(QMainWindow):
         self.progress.setVisible(busy)
 
     def _invalidate_plan(self, *_args) -> None:
+        self._refresh_timer.stop()
+        self._refresh_pending = False
+        self._preview_folder = None
         if self.plan is not None and not self._busy():
             self._set_plan(None)
             self.status("")
 
+    def _folder_key(self, text: str) -> Path | None:
+        text = text.strip()
+        if not text:
+            return None
+        try:
+            return Path(text).expanduser().resolve()
+        except (OSError, RuntimeError):
+            return None
+
+    def _on_folder_text(self, text: str) -> None:
+        # Só descarta a prévia se a pasta realmente mudou (não por um espaço a mais, por exemplo).
+        if self._preview_folder is not None and self._folder_key(text) == self._preview_folder:
+            return
+        self._invalidate_plan()
+
+    def _on_options_changed(self, *_args) -> None:
+        """Uma opção que muda o plano foi alterada: atualiza a prévia (nunca organiza sozinho)."""
+        self._pending_organize = False  # mudou algo: nada de organizar automaticamente depois
+        if self._preview_folder is None:
+            return  # ainda não há prévia para atualizar
+        if self._worker_kind in ("execute", "undo"):
+            return  # nunca interrompe uma organização/desfazer; a prévia é limpa no fim
+        self._show_refreshing()
+        self._refresh_timer.start()  # reinicia a contagem a cada mudança (debounce)
+
+    def _show_refreshing(self) -> None:
+        for w in (self.tree, self.table, self.chart):
+            w.setEnabled(False)  # mantém a prévia antiga visível, mas apagada
+        self.organize_btn.setEnabled(False)
+        self.status(tr("msg.refreshing"))
+
+    def _auto_refresh(self) -> None:
+        if self._preview_folder is None or self._worker_kind in ("execute", "undo"):
+            return
+        if self._busy():  # análise em andamento com opções antigas: cancela e refaz em seguida
+            self._refresh_pending = True
+            self.worker.cancel()
+            return
+        self.analyze(refresh=True)
+
+    def _after_worker(self) -> bool:
+        """Chamado quando um worker termina. Retorna True se uma nova prévia foi iniciada."""
+        if self._refresh_pending:
+            self._refresh_pending = False
+            if self._preview_folder is not None:
+                self.analyze(refresh=True)
+                return True
+        return False
+
     def _set_plan(self, plan: Plan | None) -> None:
         self.plan = plan
+        bar = self.table.view.verticalScrollBar()
+        scroll = bar.value()
         self.tree.set_plan(plan)
         self.table.set_plan(plan)
+        if plan is not None:
+            bar.setValue(min(scroll, bar.maximum()))  # mantém a posição ao atualizar a prévia
+        for w in (self.tree, self.table, self.chart):
+            w.setEnabled(True)
         self.chart.set_plan(plan)
         self.tree_stack.setCurrentIndex(1 if plan else 0)
         s = plan.summary() if plan else None
@@ -539,8 +604,9 @@ class MainWindow(QMainWindow):
             box.setDetailedText(detail)
         return box.exec() == QMessageBox.Yes
 
-    def _run(self, worker: Worker, on_done, busy_text: str) -> None:
+    def _run(self, worker: Worker, on_done, busy_text: str, kind: str = "analyze") -> None:
         self.worker = worker
+        self._worker_kind = kind
         self._on_done = on_done
         self.progress.setRange(0, 0)
         self.status(busy_text)
@@ -555,12 +621,17 @@ class MainWindow(QMainWindow):
     def _clear_worker(self) -> None:
         self.worker = None
         self.thread = None
+        self._worker_kind = None
         self._update_buttons()
 
     @Slot(object)
     def _finish(self, result) -> None:
         on_done = self._on_done
+        kind = self._worker_kind
         self._clear_worker()
+        if kind == "analyze" and self._refresh_pending:
+            self._after_worker()  # resultado com opções antigas: descarta e refaz
+            return
         on_done(result)
 
     @Slot(int, int, str)
@@ -575,8 +646,14 @@ class MainWindow(QMainWindow):
 
     @Slot(object)
     def _on_failed(self, exc: Exception) -> None:
+        kind = self._worker_kind
         self._clear_worker()
         self._pending_organize = False
+        if kind == "analyze" and self._after_worker():
+            return
+        if kind == "analyze":
+            self._preview_folder = None
+            self._set_plan(None)
         if isinstance(exc, UnsafeFolderError):
             msg = tr("unsafe." + exc.code)
             self._error(tr("unsafe.title"), msg)
@@ -592,11 +669,18 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def _on_cancelled(self) -> None:
+        kind = self._worker_kind
         self._clear_worker()
         self._pending_organize = False
+        if kind == "analyze" and self._after_worker():
+            return  # cancelada só para refazer com as opções novas
+        if kind == "analyze" and self.plan is not None:
+            self._set_plan(self.plan)  # a prévia antiga continua válida para as opções dela
         self.status(tr("msg.cancelled"))
 
     def cancel(self) -> None:
+        self._refresh_timer.stop()
+        self._refresh_pending = False
         if self.worker is not None:
             self.worker.cancel()
             self.status(tr("msg.cancelling"))
@@ -622,9 +706,11 @@ class MainWindow(QMainWindow):
             self.folder_edit.setText(folder)
             self.analyze()
 
-    def analyze(self) -> None:
+    def analyze(self, refresh: bool = False) -> None:
         if self._busy():
             return
+        self._refresh_timer.stop()
+        self._refresh_pending = False
         text = self.folder_edit.text().strip()
         if not text:
             self.status(tr("msg.pick_folder"))
@@ -638,8 +724,14 @@ class MainWindow(QMainWindow):
             return
         self._save_settings()
         options = self.current_options()
-        self._set_plan(None)
-        self._run(Worker(build_plan, folder, options), self._on_plan, tr("msg.analyzing", folder=folder))
+        self._preview_folder = self._folder_key(text)
+        if refresh and self.plan is not None:
+            self._show_refreshing()  # mantém a prévia antiga (apagada) em vez de uma tela vazia
+            busy_text = tr("msg.refreshing")
+        else:
+            self._set_plan(None)
+            busy_text = tr("msg.analyzing", folder=folder)
+        self._run(Worker(build_plan, folder, options), self._on_plan, busy_text)
 
     def _on_plan(self, plan: Plan) -> None:
         self._set_plan(plan)
@@ -723,7 +815,8 @@ class MainWindow(QMainWindow):
             return
         self._save_settings()
         self._run(Worker(execute_plan, plan, backup, allow_sensitive_trash=allow_sensitive_trash),
-                  self._on_executed, tr("msg.backing_up") if backup is not BackupMode.NONE else tr("msg.organizing"))
+                  self._on_executed, tr("msg.backing_up") if backup is not BackupMode.NONE else tr("msg.organizing"),
+                  kind="execute")
 
     def _format_list(self, plan: Plan, items) -> str:
         lines = []
@@ -738,6 +831,7 @@ class MainWindow(QMainWindow):
         return "\n".join(lines)
 
     def _on_executed(self, res) -> None:
+        self._preview_folder = None
         self._set_plan(None)
         body = tr("result.body", moved=res.moved, renamed=res.renamed, trashed=res.trashed,
                   skipped=res.skipped, errors=len(res.errors))
@@ -770,9 +864,10 @@ class MainWindow(QMainWindow):
             body += tr("undo.trash_note", n=len(j.trashes))
         if not self._ask(tr("undo.title"), body, QMessageBox.Question, default_yes=True):
             return
-        self._run(Worker(undo_journal, j), self._on_undone, tr("msg.undoing"))
+        self._run(Worker(undo_journal, j), self._on_undone, tr("msg.undoing"), kind="undo")
 
     def _on_undone(self, r) -> None:
+        self._preview_folder = None
         self._set_plan(None)
         body = tr("undo.result", restored=r.restored, renamed=r.renamed, modified=r.modified,
                   missing=len(r.missing), errors=len(r.errors))

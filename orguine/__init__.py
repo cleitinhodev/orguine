@@ -3,7 +3,7 @@
 Copyright (C) 2024-2026 CleitinhoDEV - GPL-3.0-or-later
 """
 
-__version__ = "2.1.0"
+__version__ = "2.1.1"
 APP_NAME = "Orguine"
 APP_DISPLAY_NAME = "Orguine"
 ORG_NAME = "CleitinhoDEV"

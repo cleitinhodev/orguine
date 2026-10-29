@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "orguine"
-version = "2.1.0"
+version = "2.1.1"
 description = "Orguine — organize suas pastas com prévia, backup e desfazer (PySide6)."
 readme = "README.md"
 license = { text = "GPL-3.0-or-later" }

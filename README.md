@@ -6,74 +6,108 @@
 
 <p align="center">
   <b>Organize suas pastas com prévia, backup e desfazer — sem sustos.</b><br>
+  <i>Tidy up your folders with a preview, backup and undo — no surprises.</i>
+</p>
+
+<p align="center">
+  <a href="https://github.com/cleitinhodev/orguine/releases/latest"><img src="https://img.shields.io/github/v/release/cleitinhodev/orguine?color=6ff8c8&label=download" alt="Última versão"></a>
   <a href="https://github.com/cleitinhodev/orguine/actions/workflows/ci.yml"><img src="https://github.com/cleitinhodev/orguine/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/Windows%20%7C%20Linux%20%7C%20macOS-7C6CF0" alt="Windows | Linux | macOS">
   <img src="https://img.shields.io/badge/PySide6-Qt%206-7C6CF0" alt="PySide6">
   <img src="https://img.shields.io/badge/licen%C3%A7a-GPL--3.0-6ff8c8" alt="GPL-3.0">
 </p>
 
 <p align="center">
+  <a href="https://github.com/cleitinhodev/orguine/releases/latest"><b>⬇️ Baixar</b></a> ·
   <a href="https://github.com/cleitinhodev">Meu GitHub</a> ·
   <a href="https://github.com/cleitinhodev/orguine">Projeto</a> ·
-  <a href="https://www.bugzinho.com/">Site</a> ·
-  <a href="https://www.bugzinho.com/donate">💚 Apoiar / Doar</a>
+  <a href="https://www.bugzinho.com/">bugzinho.com</a> ·
+  <a href="https://www.bugzinho.com/donate">💚 Apoiar / Doar</a> ·
+  <a href="#-english">🇺🇸 English</a>
 </p>
 
-O **Orguine** arruma pastas bagunçadas (como **Downloads** ou **Área de Trabalho**) em poucos cliques,
-**mostrando antes como tudo vai ficar**. Tem backup, desfazer, proteção de arquivos sensíveis e
-tratamento de duplicados. Interface em **português (Brasil)** e **inglês**. *English version below.*
+---
+
+O **Orguine** é um organizador de arquivos para desktop, gratuito e de código aberto. Ele arruma pastas bagunçadas
+(como **Downloads** ou **Área de Trabalho**) em poucos cliques e **mostra antes como tudo vai ficar**.
+Nada é movido sem a sua confirmação, nada é sobrescrito, e dá para **desfazer** tudo com um clique.
 
 ![Orguine com efeitos neon animados](docs/screenshots/neon.gif)
 
-| Prévia "como ficará" (tema claro) | Sobre |
+| Prévia "como ficará" | Gráfico de tipos de arquivo |
 |---|---|
-| ![Prévia](docs/screenshots/01-preview-arvore-light.png) | ![Sobre](docs/screenshots/06-sobre-dark.png) |
+| ![Prévia em árvore](docs/screenshots/01-preview-arvore-light.png) | ![Gráfico de rosca](docs/screenshots/03-grafico-dark-en.png) |
+| **Aviso de arquivos sensíveis** | **Sobre** |
+| ![Aviso de arquivos sensíveis](docs/screenshots/05-aviso-sensiveis.png) | ![Sobre](docs/screenshots/06-sobre-dark.png) |
 
-> O Orguine é a evolução do antigo **Organize Files** (os scripts originais estão em [`legacy/`](legacy/)).
+## ⬇️ Download
+
+Baixe a versão mais recente em **[Releases](https://github.com/cleitinhodev/orguine/releases/latest)**.
+Não precisa instalar Python nem nada mais: é um arquivo único.
+
+| Sistema | Arquivo | Como abrir |
+|---|---|---|
+| **Windows 10/11** (64 bits) | `Orguine-windows-amd64.exe` | Dê dois cliques. Se o SmartScreen avisar "O Windows protegeu o computador", clique em **Mais informações → Executar assim mesmo** (o executável é novo e não é assinado). |
+| **Linux** (x86_64) | `Orguine-linux-x86_64` | `chmod +x Orguine-linux-x86_64 && ./Orguine-linux-x86_64` |
+| **macOS** | `Orguine-macos-*.zip` | Descompacte e, na primeira vez, abra com **botão direito → Abrir** (app não assinado). |
+
+Cada arquivo tem um `.sha256` ao lado para você conferir a integridade
+(`sha256sum -c Orguine-linux-x86_64.sha256`, ou `Get-FileHash` no PowerShell).
 
 ## ✨ Funcionalidades
 
-- **Prévia "como ficará"**: uma árvore com as pastas que serão criadas e o que vai para cada uma. **Nada é movido antes de você confirmar.**
-- **Gráfico de tipos de arquivo**: gráfico de rosca por categoria, por quantidade ou por tamanho, com legenda e porcentagens.
-- **Tabela de detalhes** com busca e filtros (renomeados, duplicados, sensíveis, ignorados) e o motivo de cada decisão.
+- **Prévia "como ficará"**: uma árvore com as pastas que serão criadas e o que vai para cada uma. A prévia **se atualiza sozinha** quando você muda o modo ou qualquer opção.
 - **4 modos de organização**:
   - **Categorias inteligentes**: Imagens, Documentos, Vídeos, Músicas, Compactados, Código, Instaladores…
   - **Por extensão**: uma pasta por formato (PDF, MP3…).
-  - **Por data**: Ano/Mês. Para fotos, usa a data EXIF quando ela existe.
+  - **Por data**: Ano/Mês. Para fotos, usa a data **EXIF** quando ela existe.
   - **Alfabética**: A–Z, 0-9 e Outros.
-- **Duplicados**: detectados por conteúdo (SHA-256, não só pelo nome). Você escolhe entre manter o original e enviar as cópias para a **lixeira**, apenas pular, manter o mais novo, ou ignorar.
+- **Duplicados por conteúdo (SHA-256)**, não só pelo nome. Você escolhe: manter o original e mandar as cópias para a **lixeira**, apenas pular, manter o mais novo ou ignorar. O hash é feito em etapas (tamanho → início → arquivo completo), então é rápido mesmo com muitos arquivos.
+- **Proteção de arquivos sensíveis**: chaves, `.env`, cofres de senha, carteiras e bancos de dados ficam no lugar por padrão.
+- **Gráfico de tipos de arquivo** (rosca, por quantidade ou tamanho) e **tabela de detalhes** com busca, filtros e o motivo de cada decisão.
 - **Subpastas (opcional)**: pastas de projetos (`.git`, `package.json`, `pyproject.toml`…) nunca são desmontadas.
-- **Trabalho em segundo plano**: análise e organização rodam em uma *thread*, com barra de progresso e botão **Cancelar**, e a janela não trava.
-- **Desfazer a última organização** com um clique.
-- **Visual neon**: a cor **#6ff8c8** do robozinho combinada ao roxo do tema. Faixas de luz correm na linha do cabeçalho, na aba ativa e na barra de progresso; os botões principais ganham um reflexo, e os cartões brilham ao passar o mouse. As animações usam um único temporizador leve (~30 fps), **pausam com a janela minimizada** e podem ser desligadas em **Opções → Animações neon** (ou com `ORGUINE_NO_ANIM=1`).
-- **Tema claro/escuro**, arrastar e soltar uma pasta na janela, e preferências salvas.
-- **Linha de comando (CLI)** para usar em scripts.
+- **Pastas de destino inteligentes**: pastas que já existem são reaproveitadas (mesmo com outra grafia, como `imagens`/`Imagens`). Um sufixo como `A (2)` só aparece quando o nome está ocupado por um arquivo que vai continuar no lugar.
+- **Backup opcional** (ZIP ou cópia da pasta) e **desfazer a última organização** com um clique.
+- **Trabalho em segundo plano** com barra de progresso e botão **Cancelar**: a janela não trava.
+- **Visual neon**: a cor **#6ff8c8** do robozinho com o roxo do tema. Faixas de luz no cabeçalho, na aba ativa e na barra de progresso; reflexo nos botões; cartões que brilham. As animações são leves, pausam com a janela minimizada e podem ser desligadas em **Opções → Animações neon** (ou com `ORGUINE_NO_ANIM=1`).
+- **Tema claro/escuro**, **português (Brasil) e inglês**, arrastar e soltar uma pasta e preferências salvas.
+- **Linha de comando (CLI)** para scripts e automações.
 
-## 🛡️ Segurança em camadas
+## 🛡️ Modelo de segurança
 
-O antigo Organize Files 1.x podia **sobrescrever arquivos com o mesmo nome** e não tinha como voltar atrás. Agora:
+O Orguine foi feito para que organizar nunca custe um arquivo:
 
-1. **Nunca sobrescreve**: se o destino já existir, o arquivo vira `nome (1).ext`, `nome (2).ext`… (sem diferenciar maiúsculas de minúsculas, como no Windows/macOS).
-2. **Pastas perigosas são bloqueadas**: raiz do disco, `C:\Windows`, `Program Files`, `AppData`, `/usr`, `/etc`, `/System`, `~/Library`, `~/.ssh`, `~/.config`… Organizar a **pasta pessoal inteira** exige digitar `ORGANIZAR` para confirmar.
-3. **Arquivos sensíveis ficam no lugar**: chaves (`id_rsa`, `.pem`, `.pfx`), `.env`, cofres de senha (`.kdbx`), carteiras, bancos de dados e nomes como "senha" ou "password" **não são movidos por padrão**. Se você decidir incluí-los, aparece um **aviso listando cada um**.
-   ![Aviso de arquivos sensíveis](docs/screenshots/05-aviso-sensiveis.png)
-4. **Arquivos sensíveis nunca vão para a lixeira** como "duplicados", a menos que você permita explicitamente (CLI: `--permitir-lixeira-sensiveis`).
-5. **Arquivos de sistema, ocultos e temporários são ignorados**: `desktop.ini`, `.DS_Store`, `Thumbs.db`, downloads incompletos (`.crdownload`, `.part`) e atalhos. O próprio executável do programa também nunca é movido.
-6. **Backup opcional antes de mover**: um **ZIP** ou uma **cópia da pasta**, guardado na pasta de dados do app.
-7. **Diário de desfazer**: cada movimentação é registrada em JSON, salvo de forma atômica durante a execução. Se o programa fechar no meio, o desfazer ainda funciona.
-8. **Exclusões vão para a lixeira do sistema** (via Send2Trash), nunca são apagadas direto.
-9. **Log detalhado** de tudo o que foi feito, com rotação automática.
+1. **Prévia primeiro**: nada é movido antes de você ver o resultado e confirmar.
+2. **Nunca sobrescreve**: se o destino já existir, o arquivo vira `nome (1).ext`, `nome (2).ext`… (sem diferenciar maiúsculas de minúsculas, como no Windows/macOS). Arquivos alterados entre a prévia e a execução são conferidos de novo.
+3. **Pastas perigosas são bloqueadas**: raiz do disco, `C:\Windows`, `Program Files`, `AppData`, `/usr`, `/etc`, `/System`, `~/Library`, `~/.ssh`, `~/.config`… Organizar a **pasta pessoal inteira** exige digitar `ORGANIZAR`.
+4. **Arquivos sensíveis ficam no lugar**: chaves (`id_rsa`, `.pem`, `.pfx`), `.env`, `.kdbx`, carteiras, bancos de dados e nomes como "senha" ou "password". Para incluí-los, aparece um **aviso listando cada um**, e eles **nunca vão para a lixeira** como duplicados sem permissão explícita (CLI: `--permitir-lixeira-sensiveis`).
+5. **Arquivos de sistema, ocultos e temporários são ignorados**: `desktop.ini`, `.DS_Store`, `Thumbs.db`, downloads incompletos (`.crdownload`, `.part`) e links simbólicos. O próprio executável do Orguine nunca é movido.
+6. **Backup opcional** em ZIP ou cópia, guardado na pasta de dados do app.
+7. **Diário de desfazer à prova de quedas**: cada passo é gravado em JSON (de forma atômica) **antes** de acontecer. Se o programa fechar no meio, o desfazer ainda devolve tudo aos nomes e lugares originais.
+8. **Exclusões só vão para a lixeira do sistema** (Send2Trash), nunca são apagadas direto.
+9. **Log detalhado** de tudo, com rotação automática.
 
-## 🚀 Como usar
+## ⌨️ Linha de comando
 
-### Executável pronto
-Baixe o arquivo do seu sistema em **[Releases](https://github.com/cleitinhodev/orguine/releases)** ou na aba
-**[Actions](https://github.com/cleitinhodev/orguine/actions)** (artefatos do último build):
-`Orguine-windows-amd64.exe`, `Orguine-macos-*.zip` (app) ou `Orguine-linux-x86_64`.
+```bash
+# só ver a prévia (não mexe em nada)
+orguine-cli ~/Downloads --dry-run
 
-> No macOS o app não é assinado. Na primeira vez, abra com **botão direito → Abrir**.
-> No Windows, o SmartScreen pode avisar por ser um executável novo e sem assinatura: **Mais informações → Executar assim mesmo**.
+# organizar por categoria, com backup ZIP e duplicados para a lixeira
+orguine-cli ~/Downloads --backup zip --duplicados trash
 
-### A partir do código-fonte (Python 3.10+)
+# por data (ano/mês), incluindo subpastas, sem perguntar
+orguine-cli ~/Fotos --modo data --recursivo --sim
+
+# desfazer a última organização
+orguine-cli --desfazer
+```
+
+Modos: `categoria` (padrão), `extensao` (ou `tipo`), `data`, `abc`. Veja todas as opções com `--help`.
+Rodando a partir do código-fonte, use `python -m orguine` no lugar de `orguine-cli`.
+
+## 🐍 Rodar a partir do código-fonte (Python 3.10+)
+
 ```bash
 git clone https://github.com/cleitinhodev/orguine.git
 cd orguine
@@ -83,28 +117,14 @@ pip install -e ".[exif]"        # ou: pip install -r requirements.txt
 python -m orguine               # abre a interface
 ```
 
-### Linha de comando
-```bash
-# só ver a prévia (não mexe em nada)
-python -m orguine ~/Downloads --dry-run
-
-# organizar por categoria, com backup ZIP e duplicados para a lixeira
-python -m orguine ~/Downloads --backup zip --duplicados trash
-
-# por data (ano/mês), incluindo subpastas, sem perguntar
-python -m orguine ~/Fotos --modo data --recursivo --sim
-
-# desfazer a última organização
-python -m orguine --desfazer
-```
-Modos: `categoria` (padrão), `extensao` (ou `tipo`), `data`, `abc`. Veja todas as opções com `--help`.
-Depois de `pip install`, os comandos `orguine` (interface) e `orguine-cli` também ficam disponíveis.
+Depois do `pip install`, os comandos `orguine` (interface) e `orguine-cli` também ficam disponíveis.
 
 ## ⚙️ Personalizar categorias
-Copie [`orguine/resources/default_rules.json`](orguine/resources/default_rules.json) para
-`rules.json` dentro da **pasta de dados** e edite os nomes, as cores e as extensões. Na CLI, também dá para usar `--regras arquivo.json`.
 
-**Pasta de dados** (diários de desfazer, backups, logs e `rules.json`). O botão "Abrir pasta de dados" na interface abre essa pasta:
+Copie [`orguine/resources/default_rules.json`](orguine/resources/default_rules.json) para `rules.json` dentro da
+**pasta de dados** e edite nomes, cores e extensões. Na CLI, também dá para usar `--regras arquivo.json`.
+
+A **pasta de dados** guarda diários de desfazer, backups, logs e o `rules.json`. O botão "Abrir pasta de dados" abre essa pasta:
 
 | Sistema | Local |
 |---|---|
@@ -115,79 +135,96 @@ Copie [`orguine/resources/default_rules.json`](orguine/resources/default_rules.j
 Para trocar o local, defina a variável `ORGUINE_DATA_DIR`.
 
 ## 🧑‍💻 Desenvolvimento
+
 ```bash
 pip install -e ".[dev]"
 pytest -q                       # no Linux sem tela: QT_QPA_PLATFORM=offscreen pytest -q
 python scripts/build_exe.py     # gera o executável em dist/ (PyInstaller)
 ```
 
-Estrutura do projeto:
 ```
 orguine/
 ├── core/         # lógica sem interface (testável)
 │   ├── planner.py     # monta o plano / prévia
-│   ├── executor.py    # executa o plano e desfaz
-│   ├── safety.py      # pastas bloqueadas, sensíveis, ocultos
-│   ├── duplicates.py  # SHA-256 em etapas (tamanho → início → completo)
+│   ├── executor.py    # executa o plano
 │   ├── journal.py     # diário de desfazer
+│   ├── safety.py      # pastas bloqueadas, sensíveis, ocultos
+│   ├── duplicates.py  # SHA-256 em etapas
 │   ├── backup.py      # ZIP / cópia
 │   └── rules.py, naming.py, dates.py, hashing.py, models.py
 ├── gui/          # PySide6: janela, prévia, gráfico, tema, efeitos neon, "Sobre", workers (QThread)
 ├── cli.py        # linha de comando
 ├── i18n.py       # textos pt-BR / en
-└── resources/    # regras padrão e ícones (orguine_icon: app/executável; orguine_favicon: cabeçalho)
+└── resources/    # regras padrão e ícones
 tests/            # pytest + pytest-qt
-legacy/           # Organize Files 1.x (CustomTkinter), só para referência
 ```
 
-O **GitHub Actions** roda os testes no Windows, no macOS e no Linux e gera os executáveis com PyInstaller
-(e confere se o ícone ficou embutido no `.exe`). Uma tag `v*` publica tudo como Release.
+O **GitHub Actions** roda os testes no Windows, no macOS e no Linux e gera os executáveis com PyInstaller.
+Uma tag `v*` publica os executáveis automaticamente na página de [Releases](https://github.com/cleitinhodev/orguine/releases).
+
+Encontrou um problema ou tem uma ideia? Abra uma [issue](https://github.com/cleitinhodev/orguine/issues).
 
 ## 💚 Apoie
+
 Se o Orguine te ajudou, considere [apoiar o projeto](https://www.bugzinho.com/donate). Visite também [bugzinho.com](https://www.bugzinho.com/).
 
 ## 📄 Licença
+
 [GPL-3.0](LICENSE) © CleitinhoDEV
 
 ---
 
 # 🇺🇸 English
 
-**Orguine** tidies up messy folders (Downloads, Desktop…) and **shows you the result before anything is moved**.
-It is built with **PySide6 (Qt 6)** and has an English and Brazilian Portuguese UI. It grew out of the old *Organize Files* project.
+**Orguine** is a free, open-source desktop file organizer. It tidies up messy folders (Downloads, Desktop…)
+in a few clicks and **shows you the result before anything is moved**. Nothing is overwritten, and everything can be **undone** with one click.
+Built with **PySide6 (Qt 6)**, with an English and Brazilian Portuguese UI.
 
-![File types chart](docs/screenshots/03-grafico-dark-en.png)
+### Download
 
-**Features**
-- A **"Result preview" tree**, a details table with filters, and a **file-type donut chart** (by count or size).
-- **Modes**: smart categories, by extension, by date (Year/Month, using EXIF for photos), and alphabetical.
-- **Duplicate detection** by content (SHA-256). Copies can go to the **system trash**, be skipped, or keep only the newest file.
-- Optional recursion, which never breaks apart project folders (`.git`, `package.json`…).
-- A background worker (QThread) with progress and **Cancel**. **One-click undo**. Light and dark themes. Drag and drop.
-- **Neon look**: the robot's **#6ff8c8** blended with the purple theme. Light streaks run along the header line, the active tab and the progress bar; primary buttons get a shine sweep and cards glow on hover. The animations run on a single light timer, pause while the window is minimized, and can be turned off under **Options → Neon animations** (or with `ORGUINE_NO_ANIM=1`).
-- A **CLI**: `python -m orguine <folder> [--dry-run] [--modo categoria|extensao|data|abc] [--backup zip|folder] [--duplicados trash|skip|newest] [--desfazer]`.
+Get the latest build from **[Releases](https://github.com/cleitinhodev/orguine/releases/latest)**. It is a single file; no Python needed.
 
-**Safety**
-- Files are never overwritten (`name (1).ext`).
-- System and root folders are blocked. Organizing your whole home folder requires typed confirmation.
-- Sensitive files (keys, `.env`, password vaults, wallets…) are left in place by default. Including them shows a warning with the full list, and they are never trashed as duplicates unless you explicitly allow it.
-- System, hidden, temporary, and partial-download files are skipped.
-- Optional ZIP or folder backup. An atomic undo journal. Deletions only go to the trash. Rotating logs.
+- **Windows 10/11 (64-bit)**: `Orguine-windows-amd64.exe`. If SmartScreen warns you, click **More info → Run anyway** (the executable is new and unsigned).
+- **Linux (x86_64)**: `Orguine-linux-x86_64`. Run `chmod +x Orguine-linux-x86_64 && ./Orguine-linux-x86_64`.
+- **macOS**: `Orguine-macos-*.zip`. Unzip, then right-click → **Open** the first time (unsigned app).
 
-**Download**: grab the build for your system from [Releases](https://github.com/cleitinhodev/orguine/releases) or the latest [Actions](https://github.com/cleitinhodev/orguine/actions) run.
+Each file has a `.sha256` checksum next to it.
 
-**Run from source**
+### Features
+
+- A **"Result preview" tree** that **updates automatically** when you change the mode or any option, plus a details table with filters and a **file-type donut chart**.
+- **Modes**: smart categories, by extension, by date (Year/Month, using EXIF for photos) and alphabetical.
+- **Duplicate detection by content (SHA-256)**. Copies can go to the **system trash**, be skipped, or keep only the newest file.
+- **Sensitive files** (keys, `.env`, password vaults, wallets, databases…) stay in place by default.
+- **Smart destination folders**: existing folders are reused (case-insensitively); a suffix like `A (2)` only appears when the name is taken by a file that stays.
+- Optional recursion that never breaks apart project folders (`.git`, `package.json`…).
+- Optional ZIP/folder **backup** and **one-click undo**. Background work with progress and **Cancel**.
+- **Neon look** (#6ff8c8 + purple), light and dark themes, drag and drop. Animations can be turned off under **Options → Neon animations** (or `ORGUINE_NO_ANIM=1`).
+- A **CLI**: `orguine-cli <folder> [--dry-run] [--modo categoria|extensao|data|abc] [--recursivo] [--backup zip|folder] [--duplicados trash|skip|newest] [--desfazer]`.
+
+### Safety model
+
+- Preview first: nothing moves until you confirm. Files are never overwritten (`name (1).ext`).
+- System and root folders are blocked; organizing your whole home folder requires typed confirmation.
+- Sensitive files stay in place by default; including them shows a warning with the full list, and they are never trashed as duplicates unless you explicitly allow it.
+- System, hidden, temporary and partial-download files, and symbolic links, are skipped.
+- A crash-safe, atomic undo journal: every step is recorded before it happens. Deletions only go to the trash. Rotating logs.
+
+### Run from source (Python 3.10+)
+
 ```bash
+git clone https://github.com/cleitinhodev/orguine.git && cd orguine
 pip install -e ".[exif]"
 python -m orguine          # GUI
 python -m orguine --help   # CLI
 ```
+
 Custom categories: copy `orguine/resources/default_rules.json` to `rules.json` in the app data folder
-(`%APPDATA%\Orguine`, `~/Library/Application Support/Orguine`, or `~/.local/share/orguine`).
+(`%APPDATA%\Orguine`, `~/Library/Application Support/Orguine`, or `~/.local/share/orguine`; override with `ORGUINE_DATA_DIR`).
 
-**Development**: `pip install -e ".[dev]" && pytest -q`. To build: `python scripts/build_exe.py`.
-CI runs the tests and builds Windows, macOS, and Linux executables.
+**Development**: `pip install -e ".[dev]" && pytest -q`. Build: `python scripts/build_exe.py`.
+CI runs the tests on Windows, macOS and Linux, builds the executables, and publishes them to Releases on every `v*` tag.
 
-**Links**: [My GitHub](https://github.com/cleitinhodev) · [Project](https://github.com/cleitinhodev/orguine) · [Website](https://www.bugzinho.com/) · [Support / Donate](https://www.bugzinho.com/donate)
+**Links**: [My GitHub](https://github.com/cleitinhodev) · [Project](https://github.com/cleitinhodev/orguine) · [bugzinho.com](https://www.bugzinho.com/) · [Support / Donate](https://www.bugzinho.com/donate)
 
-License: GPL-3.0 © CleitinhoDEV
+License: [GPL-3.0](LICENSE) © CleitinhoDEV
